@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
+
+project(voxelize)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_PREFIX_PATH /home/vincentmayer/libtorch)
+find_package(Torch REQUIRED)
+# find_package(Python3 COMPONENTS Interpreter Development)
+add_executable(voxelize voxelize_cpu.cpp)
+# target_include_directories(voxelize PUBLIC "/home/vincentmayer/.pyenv/versions/3.9.16/include/python3.9")
+target_include_directories(voxelize PUBLIC "/home/vincentmayer/voxelize/bevfusion")
+target_link_libraries(voxelize "${TORCH_LIBRARIES}")
+set_property(TARGET voxelize PROPERTY CXX_STANDARD 14)
