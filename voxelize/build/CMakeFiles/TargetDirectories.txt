@@ -1,3 +1,0 @@
-/home/vincentmayer/voxelize/bevfusion/build/CMakeFiles/voxelize.dir
-/home/vincentmayer/voxelize/bevfusion/build/CMakeFiles/edit_cache.dir
-/home/vincentmayer/voxelize/bevfusion/build/CMakeFiles/rebuild_cache.dir
