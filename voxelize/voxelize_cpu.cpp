@@ -63,7 +63,7 @@ void hard_voxelize_kernel(const torch::TensorAccessor<float, 2> points,
                           torch::TensorAccessor<float, 3> voxels,
                           torch::TensorAccessor<int, 2> coors,
                           torch::TensorAccessor<int, 1> num_points_per_voxel,
-                          std::vector<at::Tensor> &coor_to_voxelidx, int &voxel_num,
+                          torch::TensorAccessor<int, 3> coor_to_voxelidx, int &voxel_num,
                           const std::vector<float> voxel_size,
                           const std::vector<float> coors_range,
                           const std::vector<int> grid_size, const int max_points,
@@ -88,12 +88,7 @@ void hard_voxelize_kernel(const torch::TensorAccessor<float, 2> points,
 
         if (coor[i][0] == -1)
             continue;
-        int x = coor[i][0] / 48;
-        int y = coor[i][1] / 48;
-        int z = coor[i][2] / 8;
         voxelidx = coor_to_voxelidx[coor[i][0]][coor[i][1]][coor[i][2]];
-
-        // record voxel
         if (voxelidx == -1)
         {
             voxelidx = voxel_num;
@@ -145,21 +140,20 @@ int hard_voxelize_cpu(const at::Tensor &points, at::Tensor &voxels, at::Tensor &
     // coors, num_points_per_voxel, coor_to_voxelidx are int Tensor
     // printf("cpu coor_to_voxelidx size: [%d, %d, %d]\n", grid_size[2],
     // grid_size[1], grid_size[0]);
-    // at::Tensor coor_to_voxelidx =
-    //     -at::ones({grid_size[0], grid_size[1], grid_size[2]}, coors.options());
-    std::vector<at::Tensor> coor_to_voxelidx;
-    for (int i = 0; i < 30 * 30 * 5; i++)
-    {
-        coor_to_voxelidx.push_back(at::empty({48, 48, 5}, coors.options()));
-    }
+    auto initTime = now();
+    at::Tensor coor_to_voxelidx =
+        -at::ones({grid_size[0], grid_size[1], grid_size[2]}, coors.options());
+    auto alloc = duration_cast<microseconds>(now() - initTime);
+    std::cout << "Duration JUST alloc: " << alloc.count() * 1e-6 << " s" << std::endl;
+
     auto startTime = now();
 
     int voxel_num = 0;
-    hard_voxelize_kernel(points.accessor<float, 2>(), voxels.accessor<float, 3>(),
-                         coors.accessor<int, 2>(),
-                         num_points_per_voxel.accessor<int, 1>(), coor_to_voxelidx,
-                         voxel_num, voxel_size, coors_range, grid_size, max_points,
-                         max_voxels, num_points, num_features, NDim);
+    hard_voxelize_kernel(
+        points.accessor<float, 2>(), voxels.accessor<float, 3>(),
+        coors.accessor<int, 2>(), num_points_per_voxel.accessor<int, 1>(),
+        coor_to_voxelidx.accessor<int, 3>(), voxel_num, voxel_size, coors_range,
+        grid_size, max_points, max_voxels, num_points, num_features, NDim);
 
     auto duration = duration_cast<microseconds>(now() - startTime);
     std::cout << "Duration no alloc: " << duration.count() * 1e-6 << " s" << std::endl;

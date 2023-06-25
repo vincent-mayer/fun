@@ -4,7 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/home/vincentmayer/libtorch/**"
+                "/home/vincent/libs/**",
+                "/home/vincent/repos/fun/voxelize"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/g++",
