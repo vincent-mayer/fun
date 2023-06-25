@@ -1,3 +1,4 @@
+#include <iostream>
 #include <vector>
 
 #define NN 2048
@@ -17,7 +18,7 @@ __global__ void gemmKernel(int M, int N, int K, const float *A, const float *B, 
     if (x < M && y < N)
     {
         float tmp = 0.0;
-        for (int i = 0; i < K; i++)
+        for (int i = 0; i < K; ++i)
         {
             tmp += A[x * K + i] * B[i * N + y];
         }
@@ -25,12 +26,10 @@ __global__ void gemmKernel(int M, int N, int K, const float *A, const float *B, 
     }
 }
 
-void gemmKernelLauncher(std::vector<float> &A, std::vector<float> &B,
-                        std::vector<float> &C)
+void gemmKernelLauncher(float *&A, float *&B, float *&C)
 {
-
     dim3 gridDim(ceil(NN / 32.0), ceil(NN / 32.0), 1);
     dim3 blockDim(32, 32, 1);
-    gemmKernel<<<gridDim, blockDim>>>(NN, NN, NN, A.data(), B.data(), C.data());
+    gemmKernel<<<gridDim, blockDim>>>(NN, NN, NN, A, B, C);
     return;
 }

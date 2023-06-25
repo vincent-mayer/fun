@@ -2,6 +2,5 @@
 #define GEMM_CUH_
 #include <vector>
 
-void gemmKernelLauncher(std::vector<float> &A, std::vector<float> &B,
-                        std::vector<float> &C);
+void gemmKernelLauncher(float *&A, float *&B, float *&C);
 #endif

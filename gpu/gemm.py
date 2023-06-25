@@ -24,7 +24,7 @@ def main():
     ets = benchmark()
     gflops = [round((FLOP / t) * 1e-12, 3) for t in ets]
     print(f"{gflops} TFLOP/S  \n{[round(e * 1e3, 1) for e in ets]} ms")
-    [np.save(f"tmp/{n}.npy", v.cpu().numpy()) for n, v in {"A": A, "B": B, "C": C}.items()]
+    [np.save(f"data/{n}.npy", v.cpu().numpy().astype(np.float32)) for n, v in {"A": A, "B": B, "C": C}.items()]
     
 
 if __name__=="__main__":
