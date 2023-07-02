@@ -1,3 +1,4 @@
+#include <cassert>
 #include <chrono>
 #include <cmath>
 #include <cuda_runtime.h>
@@ -28,14 +29,11 @@ int main(int argc, char *argv[])
     npy::LoadArrayFromNumpy(cwd / "data/C.npy", ShapeExpectedC, FortranOrderExpectedC,
                             ExpectedC);
     // Allocate result of gemm:
-    int NumElem = 1;
-    for (auto &s : ShapeExpectedC)
-        NumElem *= s;
-    std::vector<float> C(NumElem, 0.0);
+    std::vector<float> C(ExpectedC.size(), 0.0);
 
     // Device copies of A, B, C
     float *dA, *dB, *dC;
-    int ArrayBytes = NumElem * sizeof(float);
+    int ArrayBytes = ExpectedC.size() * sizeof(float);
     cudaMalloc((void **)&dA, ArrayBytes);
     cudaMalloc((void **)&dB, ArrayBytes);
     cudaMalloc((void **)&dC, ArrayBytes);
@@ -44,21 +42,20 @@ int main(int argc, char *argv[])
     cudaMemcpy(dB, B.data(), ArrayBytes, cudaMemcpyHostToDevice);
     cudaMemcpy(dC, C.data(), ArrayBytes, cudaMemcpyHostToDevice);
 
-    for (int i = 0; i < 1; i++)
+    for (int i = 0; i < 100; i++)
     {
-        std::cout << "before C: " << C[0] << std::endl;
-
         auto startTime = now();
         gemmKernelLauncher(dA, dB, dC);
-        cudaDeviceSynchronize();
+        cudaMemcpy(C.data(), dC, ArrayBytes, cudaMemcpyDeviceToHost);
         auto duration = duration_cast<microseconds>(now() - startTime);
         auto gflops = (flop / (static_cast<double>(duration.count()) * 1e-6)) * 1e-9;
-        cudaMemcpy(C.data(), dC, ArrayBytes, cudaMemcpyDeviceToHost);
-        std::cout << "after C: " << C[0] << std::endl;
-        std::cout << "expected C: " << ExpectedC[0] << std::endl;
-
         std::cout << "Duration: " << duration.count() * 1e-6 << " s"
                   << "| GFLOPS: " << gflops << std::endl;
+    }
+    // Check correctness of result
+    for (int j = 0; j < C.size(); j++)
+    {
+        assert(std::abs(C[j] - ExpectedC[j]) < 1e-3);
     }
 
     cudaFree(dA);
