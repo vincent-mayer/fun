@@ -11,6 +11,11 @@ __global__ void gemmKernel(int M, int N, int K, const float *A, const float *B, 
     // # of threads = blockDim
     // # of blocks = gridDim
     // blocks contain warps, warps contain 32 threads
+
+    // threads of the same warp are determined by threadIdx.x
+    // threadIdx.x influences x, which deterioned the row in the output matrix
+    // jumping rows in the output means jumping rows in the input A, while keeping the B
+    // column constant
     const uint x = blockIdx.x * blockDim.x + threadIdx.x;
     const uint y = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -19,10 +24,8 @@ __global__ void gemmKernel(int M, int N, int K, const float *A, const float *B, 
     {
         float tmp = 0.0;
         for (int i = 0; i < K; ++i)
-        {
             tmp += A[x * K + i] * B[i * N + y];
-        }
-        C[x * N + y] = tmp;
+        C[x * N + y] = tmp; // x = row, y = column
     }
 }
 

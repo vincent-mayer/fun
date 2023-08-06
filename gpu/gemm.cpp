@@ -17,6 +17,12 @@ constexpr double flop = 2.0 * N * N * N;
 using namespace std::chrono;
 auto now = high_resolution_clock::now;
 
+void check_result(std::vector<float> &C, std::vector<float> &ExpectedC)
+{
+    for (int j = 0; j < C.size(); j++)
+        assert(std::abs(C[j] - ExpectedC[j]) < 1e-3);
+}
+
 int main(int argc, char *argv[])
 {
     // Load data to check matmul correctness.
@@ -51,11 +57,8 @@ int main(int argc, char *argv[])
         auto gflops = (flop / (static_cast<double>(duration.count()) * 1e-6)) * 1e-9;
         std::cout << "Duration: " << duration.count() * 1e-6 << " s"
                   << "| GFLOPS: " << gflops << std::endl;
-    }
-    // Check correctness of result
-    for (int j = 0; j < C.size(); j++)
-    {
-        assert(std::abs(C[j] - ExpectedC[j]) < 1e-3);
+        if (i == 0)
+            check_result(C, ExpectedC);
     }
 
     cudaFree(dA);

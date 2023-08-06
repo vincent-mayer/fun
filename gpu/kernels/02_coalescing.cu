@@ -1,4 +1,6 @@
-#include <stdio.h>
+#include <iostream>
+#include <vector>
+
 #define NN 2048
 #define BLOCKSIZE 32
 
@@ -9,8 +11,6 @@ __global__ void gemmKernel(int M, int N, int K, const float *A, const float *B, 
 
     const int x = blockIdx.x * BLOCKSIZE + (threadIdx.x / BLOCKSIZE);
     const int y = blockIdx.y * BLOCKSIZE + (threadIdx.x % BLOCKSIZE);
-    printf("x/row:%d y/column:%d\n", x, y);
-    // printf("")
 
     // If condition is necessary when M, N aren't multiples of 32 (warp size)
     if (x < M && y < N)

@@ -2,10 +2,25 @@
 
 ## General GPU
 
-- Consists of threads, which contain an ALU + FPU
+- Consists of cores, which contain an ALU + FPU
 - ALU emulates FP-ops with INT-ops (takes several cycles)
 - FPU achieves almost one FP-op per cycle
+- thread is a software concept, cores are hardware
 - three-level compute hierarchy: Grid -> Block -> Thread
+- warp = 32 threads of a block with consecutive `threadID`
+- warps execute together on an SM (streaming multiprocessor)
+- threads within a warp execute the same intructions
+- when a warp initiates a memory request, the SM switches to another warp to hide laten
+- four warp-schedulers per multiprocessor
+- GPUs support 32B, 64B, and 128B memory accesses
+- blocks are mapped onto SMs in a one-to-one manner
+- warps are mapped onto cores in a one-to-one manner
+  - each warp is assigned to a single phyical core
+- threads are mapped onto cores in a many-to-one manner
+- number of threads per core depends on specific architecture
+- if there are more blocks than SMs, the blocks are queued and execute in round-robin manner
+- Sequential memory accesses by same warp can be grouped (coalescing)
+  - but only if data is consecutive in memory and access is aligned
 
 ## GEMM specs
 
@@ -14,6 +29,8 @@ Ran this on my RTX 3070 Laptop GPU
 - Max throughput per datasheet: 16 TFLOP/s
 - Max memory BW: 384 GB/s
 - ALUs: 5120
+- SMs (Streaming Multiprocessor): 40, i.e. 128 cores per SM
+- Core config: 160:80:40:160
 - Clock speed: 1935 MHz (measured)
 - Measured max throughput: 5120 \* 1935 MHz \* 2 FLOP = 20 TFLOP/s
 
@@ -30,9 +47,19 @@ Theoretical time for the operations:
 
 ## Compute model
 
-- 32 * 32 = 1024 threads
+- 32 \* 32 = 1024 threads
+- create a grid of (64, 64) with blocks of (32, 32), because 64\*32 = 2048
+and we need 2048\*2048 threads (that's how many elements are in the output)
+  - every group of 32 with consecutive thread ids is a warp
+- cuda will create `64 * 64 * 32 * 32 = 4194304 = 2048^2` threads and map them to the hardware
 
-## Naive kernel
+    ```C++
+    dim3 gridDim(ceil(NN / 32.0), ceil(NN / 32.0), 1); // 64, 64, 1
+    dim3 blockDim(32, 32, 1);
+    gemmKernel<<<gridDim, blockDim>>>(NN, NN, NN, A, B, C);
+    ```
+
+## 1. Naive kernel
 
 ~ x100 slower than optimum
 
@@ -42,3 +69,20 @@ Theoretical time for the operations:
 Why?
 
 - Every thread
+
+## 2. Global Memory Coalescing
+
+Sequential memory accesses by threads that are part of the same warp can be coalesced. Optimizing for global memory coalescing on GPU similar to optimizing for cache line utilization on CPU. Note: To allow coalescing the threads within a warp have to access consecutive addresses, but the accesses don't have to be consecutive within a warp.
+
+- we know that threads of one warp should access memory that's close
+- key idea: change assignment of positions in output matrix `C` to threads
+  - right now consecutive threads (warp) are mapped to consecutive rows
+  - that means consecutive threads access consecutive rows of `A` and since matrix is stored row-major the accesses from multiple threads cannot be coalesced
+  - if instead consecutive threads are mapped to consecutive columns, now they access consecutive columns of input `B`
+  - this means that thread 0, 1, 2 etc. access values of a row of `B` (consecutive columns) and thereby memory can be coalesced
+- `threadIdx.x`
+  - consecutive `threadIdx.x` determine consecutive `x` which
+    determine consecutive rows in the output matrix `C`
+  - consecutive `threadIdx.x` also indicate threads of the same warp
+  - to compute consecutive rows of the output `C` we need to load consecutive rows of `A`, while keeping the column of `B` constant
+  
