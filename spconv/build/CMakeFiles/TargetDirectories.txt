@@ -1,0 +1,3 @@
+/Users/vincentmayer/private/fun/spconv/build/CMakeFiles/spconv.dir
+/Users/vincentmayer/private/fun/spconv/build/CMakeFiles/edit_cache.dir
+/Users/vincentmayer/private/fun/spconv/build/CMakeFiles/rebuild_cache.dir
