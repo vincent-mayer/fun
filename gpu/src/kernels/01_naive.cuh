@@ -1,6 +1,7 @@
-#define NN 2048
+#pragma once
 
-__global__ void gemmKernel(int M, int N, int K, const float *A, const float *B, float *C)
+__global__ void naiveGemmKernel(int M, int N, int K, const float *A, const float *B,
+                                float *C)
 {
     // CUDA compute ordered in 3-level hierarchy
     // invocation -> grid -> blocks -> up to 1024 threads
@@ -24,12 +25,4 @@ __global__ void gemmKernel(int M, int N, int K, const float *A, const float *B, 
             tmp += A[x * K + i] * B[i * N + y];
         C[x * N + y] = tmp; // x = row, y = column
     }
-}
-
-void gemmKernelLauncher(float *&A, float *&B, float *&C)
-{
-    dim3 gridDim(ceil(NN / 32.0), ceil(NN / 32.0), 1);
-    dim3 blockDim(32, 32, 1);
-    gemmKernel<<<gridDim, blockDim>>>(NN, NN, NN, A, B, C);
-    return;
 }

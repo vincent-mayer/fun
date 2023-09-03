@@ -1,6 +1,6 @@
-#define NN 2048
 
-__global__ void gemmKernel(int M, int N, int K, const float *A, const float *B, float *C)
+__global__ void naivelyCoalescedGemmKernel(int M, int N, int K, const float *A,
+                                           const float *B, float *C)
 {
     const uint y = blockIdx.x * blockDim.x + threadIdx.x;
     const uint x = blockIdx.y * blockDim.y + threadIdx.y;
@@ -14,12 +14,4 @@ __global__ void gemmKernel(int M, int N, int K, const float *A, const float *B, 
             tmp += A[x * K + i] * B[i * N + y];
         C[x * N + y] = tmp; // x = row, y = column
     }
-}
-
-void gemmKernelLauncher(float *&A, float *&B, float *&C)
-{
-    dim3 gridDim(ceil(NN / 32.0), ceil(NN / 32.0), 1);
-    dim3 blockDim(32, 32, 1);
-    gemmKernel<<<gridDim, blockDim>>>(NN, NN, NN, A, B, C);
-    return;
 }

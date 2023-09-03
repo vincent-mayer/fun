@@ -1,5 +1,13 @@
 # GEMM
 
+**Disclaimer**: This project heavily inspired by <https://github.com/siboehm/SGEMM_CUDA> and I want to sincerely thank the author for the amazing work. The project is for my own educational purposes.
+
+Compile and run assuming you have libnpy under `$HOME/libs`:
+
+```bash
+nvcc gemm.cpp gemm.cu -o gemm -I. -I./src -I/${HOME}/libs/libnpy-0.1.0/include --std=c++17 && ./gemm
+```
+
 ## General GPU
 
 - Consists of cores, which contain an ALU + FPU

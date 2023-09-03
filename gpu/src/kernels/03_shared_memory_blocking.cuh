@@ -21,7 +21,6 @@ __global__ void gemmKernel(int M, int N, int K, const float *A, const float *B, 
 void gemmKernelLauncher(float *&A, float *&B, float *&C)
 {
     dim3 gridDim(ceil(NN / 32), ceil(NN / 32), 1);
-    // Flatten the block dim
     dim3 blockDim(32 * 32);
     gemmKernel<<<gridDim, blockDim>>>(NN, NN, NN, A, B, C);
     return;
