@@ -10,7 +10,7 @@
 - warp = 32 threads of a block with consecutive `threadID`
 - warps execute together on an SM (streaming multiprocessor)
 - threads within a warp execute the same intructions
-- when a warp initiates a memory request, the SM switches to another warp to hide laten
+- when a warp initiates a memory request, the SM switches to another warp to hide latency
 - four warp-schedulers per multiprocessor
 - GPUs support 32B, 64B, and 128B memory accesses
 - blocks are mapped onto SMs in a one-to-one manner
@@ -63,12 +63,42 @@ and we need 2048\*2048 threads (that's how many elements are in the output)
 
 ~ x100 slower than optimum
 
-- time: 125 ms
+- latency: 125 ms
 - throughput: 138 GFLOP/S
 
 Why?
 
 - Every thread
+
+```C
+// Naive
+const uint x = blockIdx.x * blockDim.x + threadIdx.x;
+const uint y = blockIdx.y * blockDim.y + threadIdx.y;
+
+```
+
+The `threadIdx.x` determines threads that belong to same warp that can make use of coalesced memory accesses. Our problem is that `x` in cuda's world and `x` in our matrix world do not indicate the same thing. In cuda `x` goes right over the columns while in linear algebra land is goes down over the rows.
+
+- This is illustrated here:
+    ![Coalescing problem](images/coalescing-problem.png "Coalescing Problem, Cuda x-y vs. Matrix x-y")
+
+## 1.1 Simple Global Memory Coalescing
+
+Instead of what is described in 2. I found that simply inverting x, y index calculation gives a similar boost as the "more complex" x-y calculation under 2.
+
+```C
+const uint y = blockIdx.x * blockDim.x + threadIdx.x;
+const uint x = blockIdx.y * blockDim.y + threadIdx.y;
+
+dim3 gridDim(ceil(NN / 32.0), ceil(NN / 32.0), 1);
+dim3 blockDim(32, 32, 1);
+gemmKernel<<<gridDim, blockDim>>>(NN, NN, NN, A, B, C);
+```
+
+We have to be a bit careful on the grid size and out of bounds checks, but apart from that this should work.
+
+- latency: 25 ms
+- throughput: 680 GFLOP/S
 
 ## 2. Global Memory Coalescing
 
@@ -85,4 +115,29 @@ Sequential memory accesses by threads that are part of the same warp can be coal
     determine consecutive rows in the output matrix `C`
   - consecutive `threadIdx.x` also indicate threads of the same warp
   - to compute consecutive rows of the output `C` we need to load consecutive rows of `A`, while keeping the column of `B` constant
-  
+
+```C
+const int x = blockIdx.x * BLOCKSIZE + (threadIdx.x / BLOCKSIZE);
+const int y = blockIdx.y * BLOCKSIZE + (threadIdx.x % BLOCKSIZE);
+
+dim3 gridDim(ceil(NN / 32), ceil(NN / 32), 1);
+dim3 blockDim(32 * 32);
+gemmKernel<<<gridDim, blockDim>>>(NN, NN, NN, A, B, C);
+```
+
+- `x` is the row (down) and `y` is the column (right)
+  ![Coalescing access](images/coalescing.png "Coalescing Access")
+
+- latency: 20 ms
+- throughput: 810 GFLOP/S
+
+## 3. Something
+
+- Next to large global memory, GPUs have small, local SRAM next to each SM.
+- logically local SRAM is partitioned among the blocks
+- threads can communicate to others threads in block via their shared memory chunk
+- 48 kB SMEM according to author, likely 128 kB for my GPU
+
+# Open Questions
+
+- Why is 1.1 slower than 2 even though both achieves coalesced memory accesses?

@@ -1,6 +1,3 @@
-#include <iostream>
-#include <vector>
-
 #define NN 2048
 
 __global__ void gemmKernel(int M, int N, int K, const float *A, const float *B, float *C)

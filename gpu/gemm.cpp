@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
     cudaMemcpy(dB, B.data(), ArrayBytes, cudaMemcpyHostToDevice);
     cudaMemcpy(dC, C.data(), ArrayBytes, cudaMemcpyHostToDevice);
 
-    for (int i = 0; i < 100; i++)
+    for (int i = 0; i < 30; i++)
     {
         auto startTime = now();
         gemmKernelLauncher(dA, dB, dC);
@@ -58,9 +58,12 @@ int main(int argc, char *argv[])
         std::cout << "Duration: " << duration.count() * 1e-6 << " s"
                   << "| GFLOPS: " << gflops << std::endl;
         if (i == 0)
+        {
             check_result(C, ExpectedC);
+            std::cout << "Result of matmul is correct." << std::endl;
+        }
     }
-
+    std::cout << "Result of matmul is correct." << std::endl;
     cudaFree(dA);
     cudaFree(dB);
     cudaFree(dC);
