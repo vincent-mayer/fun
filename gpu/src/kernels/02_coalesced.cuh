@@ -1,20 +1,19 @@
-#include <stdio.h>
-#define NN 2048
-#define BLOCKSIZE 32
+#pragma once
 
+template <const uint BLOCKSIZE>
 __global__ void coalescedGemmKernel(int M, int N, int K, const float *A, const float *B,
                                     float *C)
 {
-    const int x = blockIdx.x * BLOCKSIZE + (threadIdx.x / BLOCKSIZE);
-    const int y = blockIdx.y * BLOCKSIZE + (threadIdx.x % BLOCKSIZE);
-    printf("x/row:%d y/column:%d\n", x, y);
+    const uint cRow = blockIdx.x;
+    const uint cCol = blockIdx.y;
 
-    // If condition is necessary when M, N aren't multiples of 32 (warp size)
-    if (x < M && y < N)
-    {
-        float tmp = 0.0;
-        for (int i = 0; i < K; ++i)
-            tmp += A[x * K + i] * B[i * N + y];
-        C[x * N + y] = tmp; // x = row, y = column
-    }
+    // Allocate buffer for current block in shared mem
+    // Shared mem is shared between all threads of a block
+    __shared__ float As[BLOCKSIZE * BLOCKSIZE];
+    __shared__ float Bs[BLOCKSIZE * BLOCKSIZE];
+
+    // Advance pointers to the starting position
+    A += cRow * K * BLOCKSIZE;
+    B += cCol * BLOCKSIZE;
+    C += cRow * N * BLOCKSIZE + cCol * BLOCKSIZE;
 }

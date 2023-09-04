@@ -1,10 +1,10 @@
+#pragma once
 
 __global__ void naivelyCoalescedGemmKernel(int M, int N, int K, const float *A,
                                            const float *B, float *C)
 {
     const uint y = blockIdx.x * blockDim.x + threadIdx.x;
     const uint x = blockIdx.y * blockDim.y + threadIdx.y;
-    printf("x/row:%d y/column:%d\n", x, y);
 
     // If condition is necessary when M, N aren't multiples of 32 (warp size)
     if (x < M && y < N)

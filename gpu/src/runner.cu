@@ -14,7 +14,7 @@ void runNaive(float *&A, float *&B, float *&C)
 void runNaivelyCoalesced(float *&A, float *&B, float *&C)
 {
     dim3 gridDim(ceil(N / 32), ceil(N / 32), 1);
-    dim3 blockDim(32 * 32);
+    dim3 blockDim(32, 32);
     naivelyCoalescedGemmKernel<<<gridDim, blockDim>>>(N, N, N, A, B, C);
     return;
 }
@@ -23,7 +23,15 @@ void runCoalesced(float *&A, float *&B, float *&C)
 {
     dim3 gridDim(ceil(N / 32), ceil(N / 32), 1);
     dim3 blockDim(32 * 32);
-    coalescedGemmKernel<<<gridDim, blockDim>>>(N, N, N, A, B, C);
+    coalescedGemmKernel<32><<<gridDim, blockDim>>>(N, N, N, A, B, C);
+    return;
+}
+
+void runSharedMem(float *&A, float *&B, float *&C)
+{
+    dim3 gridDim(ceil(N / 32), ceil(N / 32), 1);
+    dim3 blockDim(32 * 32);
+    sharedMemGemmKernel<32><<<gridDim, blockDim>>>(N, N, N, A, B, C);
     return;
 }
 
@@ -39,6 +47,10 @@ void runKernel(int kernelNum, float *&A, float *&B, float *&C)
         break;
     case 2:
         runCoalesced(A, B, C);
+        break;
+    case 3:
+        runSharedMem(A, B, C);
+        break;
     default:
         break;
     }

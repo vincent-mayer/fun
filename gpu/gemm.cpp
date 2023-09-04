@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 {
     // Which kernel to execute:
     int kernelNum;
-    std::cout << "Select the kernel by typing a number between 0 and 12";
+    std::cout << "Select the kernel by typing a number between 0 and 12: ";
     std::cin >> kernelNum;
     std::cout << "You selected number: " << kernelNum << std::endl;
 
