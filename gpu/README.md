@@ -1,6 +1,6 @@
 # GEMM
 
-**Disclaimer**: This project heavily inspired by <https://github.com/siboehm/SGEMM_CUDA> and I want to sincerely thank the author for the amazing work. The project is for my own educational purposes.
+**Disclaimer**: This project is heavily inspired by <https://github.com/siboehm/SGEMM_CUDA> and I want to sincerely thank the author for the amazing work. The project is for my own educational purposes.
 
 Compile and run assuming you have libnpy under `$HOME/libs`:
 
@@ -139,7 +139,7 @@ gemmKernel<<<gridDim, blockDim>>>(NN, NN, NN, A, B, C);
 - latency: 20 ms
 - throughput: 810 GFLOP/S
 
-## 3. Something
+## 3. Shared Memory
 
 - Next to large global memory, GPUs have small, local SRAM next to each SM.
 - logically local SRAM is partitioned among the blocks
