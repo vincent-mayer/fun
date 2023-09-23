@@ -141,8 +141,6 @@ gemmKernel<<<gridDim, blockDim>>>(NN, NN, NN, A, B, C);
 
 ## 3. Shared Memory
 
-
-
 - Next to large global memory, GPUs have small, local SRAM next to each SM.
 - logically local SRAM is partitioned among the blocks
 - threads can communicate to others threads in block via their shared memory chunk
@@ -150,20 +148,27 @@ gemmKernel<<<gridDim, blockDim>>>(NN, NN, NN, A, B, C);
 
 - idea: compute matrix in blocks, load as much data as possible into fast shared memory and perform as much work as possible on it ![Blockwise computation](images/shared_mem.png "Compute matrix in blocks.")
 
-
-
 ```c++
 #define BLOCKSIZE 32
-int cRow = 0;
-int cCol = 0;
+int cRow = BlockIdx.x;
+int cCol = BlockIdx.y;
 
 
-A += BLOCKSIZE + K / BLOCKIZE
-B += 
-C += 
+A += cRow * BLOCKSIZE * K;
+B += cCol * BLOCKSIZE;
+C += BLOCKSIZE * (cRow * N + cCol);
+
+float tmp = 0.0;
+
+// Allocate region in shared mem
+__shared__ float As[BLOCKSIZE*BLOCKSIZE] = ;
+__shared__ float Bs[BLOCKSIZE*BLOCKSIZE];
+
+for (int i = 0; i < ; i + BLOCKSIZE) {
+  tmp += As
+}
 
 ```
-
 
 # Open Questions
 

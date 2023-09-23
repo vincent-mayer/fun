@@ -6,16 +6,34 @@ template <const uint BLOCKSIZE>
 __global__ void sharedMemGemmKernel(int M, int N, int K, const float *A, const float *B,
                                     float *C)
 {
-    const int x = blockIdx.x * BLOCKSIZE + (threadIdx.x / BLOCKSIZE);
-    const int y = blockIdx.y * BLOCKSIZE + (threadIdx.x % BLOCKSIZE);
-    printf("x/row:%d y/column:%d\n", x, y);
+    const uint cRow = blockIdx.x;
+    const uint cCol = blockIdx.y;
 
-    // If condition is necessary when M, N aren't multiples of 32 (warp size)
-    if (x < M && y < N)
+    // Blockdim is 1D (only x). Translate index between 0-1023 to index in (32, 32) block
+    const uint threadRow = threadIdx.x / BLOCKSIZE;
+    const uint threadCol = threadIdx.x % BLOCKSIZE;
+
+    // Allocate buffer for current block in shared mem
+    // Shared mem is shared between all threads of a block
+    __shared__ float As[BLOCKSIZE * BLOCKSIZE];
+    __shared__ float Bs[BLOCKSIZE * BLOCKSIZE];
+
+    // Advance pointers to the starting position
+    A += cRow * K * BLOCKSIZE;
+    B += cCol * BLOCKSIZE;
+    C += cRow * N * BLOCKSIZE + cCol * BLOCKSIZE;
+
+    for (int bIdx = 0; bIdx < K; bIdx += BLOCKSIZE)
     {
-        float tmp = 0.0;
-        for (int i = 0; i < K; ++i)
-            tmp += A[x * K + i] * B[i * N + y];
-        C[x * N + y] = tmp; // x = row, y = column
+        // Each thread loads a single element into shared mem. Since thread rows are
+        // consecutive memory accesses are coalesed.
+        As[threadRow * BLOCKSIZE + threadCol] = A[threadRow * K + threadCol];
+        Bs[threadRow * BLOCKSIZE + threadCol] = B[threadRow * N + threadCol];
+
+        for (int dotId = 0; dotId < BLOCKSIZE; dotId++)
+        {
+            tmp += As[dotId] * Bs[dotId];
+        }
     }
+    C[threadRow * N + threadCol] = tmp;
 }
