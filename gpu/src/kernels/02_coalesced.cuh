@@ -6,7 +6,6 @@ __global__ void coalescedGemmKernel(int M, int N, int K, const float *A, const f
 {
     const int x = blockIdx.x * BLOCKSIZE + (threadIdx.x / BLOCKSIZE);
     const int y = blockIdx.y * BLOCKSIZE + (threadIdx.x % BLOCKSIZE);
-    printf("x/row:%d y/column:%d\n", x, y);
 
     // If condition is necessary when M, N aren't multiples of 32 (warp size)
     if (x < M && y < N)

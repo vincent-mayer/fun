@@ -1,5 +1,6 @@
 #include "kernels.cuh"
 #include "runner.cuh"
+#include <stdio.h>
 
 #define N 2048
 
@@ -35,8 +36,43 @@ void runSharedMem(float *&A, float *&B, float *&C)
     return;
 }
 
+void printDeviceProperties()
+{
+    int nDevices;
+    cudaGetDeviceCount(&nDevices);
+
+    printf("Number of devices: %d\n", nDevices);
+
+    for (int i = 0; i < nDevices; i++)
+    {
+        cudaDeviceProp prop;
+        cudaGetDeviceProperties(&prop, i);
+        printf("Device Number: %d\n", i);
+        printf("  Device name: %s\n", prop.name);
+        printf("  Memory Clock Rate (MHz): %d\n", prop.memoryClockRate / 1024);
+        printf("  Memory Bus Width (bits): %d\n", prop.memoryBusWidth);
+        printf("  Peak Memory Bandwidth (GB/s): %.1f\n",
+               2.0 * prop.memoryClockRate * (prop.memoryBusWidth / 8) / 1.0e6);
+        printf("  Total global memory (Gbytes) %.1f\n",
+               (float)(prop.totalGlobalMem) / 1024.0 / 1024.0 / 1024.0);
+        printf("  minor-major: %d-%d\n", prop.minor, prop.major);
+        printf("  Warp-size: %d\n", prop.warpSize);
+        printf("  Clock Rate: %d\n", prop.clockRate);
+        printf("  L2 cache size: %d\n", prop.l2CacheSize / 1024);
+        printf("  Compute mode: %d\n", prop.computeMode);
+        printf("  Max threads per block: %d\n", prop.maxThreadsPerBlock);
+        printf("  Max threads per SM: %d\n", prop.maxThreadsPerMultiProcessor);
+        printf("  Warpsize: %d\n", prop.warpSize);
+        printf("  SMEM per SM: %.1f\n", prop.sharedMemPerMultiprocessor / 1024.0);
+        printf("  SMEM per block: %.1f\n", prop.sharedMemPerBlock / 1024.0);
+        printf("  SM count: %d\n", prop.multiProcessorCount);
+    }
+}
+
 void runKernel(int kernelNum, float *&A, float *&B, float *&C)
 {
+    printDeviceProperties();
+
     switch (kernelNum)
     {
     case 0:

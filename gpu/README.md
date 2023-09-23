@@ -150,25 +150,36 @@ gemmKernel<<<gridDim, blockDim>>>(NN, NN, NN, A, B, C);
 
 ```c++
 #define BLOCKSIZE 32
-int cRow = BlockIdx.x;
-int cCol = BlockIdx.y;
+int cRow = blockIdx.x;
+int cCol = blockIdx.y;
 
+int threadRow = threadIdx.x / BLOCKSIZE
+int threadCol = threadIdx.x % BLOCKSIZE
 
 A += cRow * BLOCKSIZE * K;
 B += cCol * BLOCKSIZE;
 C += BLOCKSIZE * (cRow * N + cCol);
 
-float tmp = 0.0;
-
 // Allocate region in shared mem
-__shared__ float As[BLOCKSIZE*BLOCKSIZE] = ;
+__shared__ float As[BLOCKSIZE*BLOCKSIZE];
 __shared__ float Bs[BLOCKSIZE*BLOCKSIZE];
 
-for (int i = 0; i < ; i + BLOCKSIZE) {
-  tmp += As
+for (int bIdx = 0; i < K; bIdx+=BLOCKSIZE) {
+  As[threadRow * BLOCKSIZE + threadCol] = A[threadRow * K + threadCol]
+  Bs[threadRow * BLOCKSIZE + threadCol] = B[threadRow * N + threadCol]
+  __syncthreads();
+  A += BLOCKSIZE;
+  B += BLOCKSIZE * N;
+  for (int dotIdx = 0; dotIdx < BLOCKSIZE; ++dotIdx)
+      tmp += As[threadRow * BLOCKSIZE + dotIdx] * B[dotIdx * BLOCKSIZE + threadCol]
+  __syncthreads();
 }
 
+C[threadRow * N + threadCol] = tmp;
 ```
+
+- latency: 15.5 ms
+- throughput: 1100 GFLOP/S
 
 # Open Questions
 
