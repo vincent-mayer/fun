@@ -36,6 +36,18 @@ void runSharedMem(float *&A, float *&B, float *&C)
     return;
 }
 
+void run1DBlocktiling(float *&A, float *&B, float *&C)
+{
+    const uint BM = 64;
+    const uint BN = 64;
+    const uint BK = 8;
+    const uint TM = 8;
+    dim3 gridDim(ceil(N / BN), ceil(N / BM));
+    dim3 blockDim((BM * BN) / TM);
+    blocktiling1DGemmKernel<BM, BN, BK, TM><<<gridDim, blockDim>>>(N, N, N, A, B, C);
+    return;
+}
+
 void printDeviceProperties()
 {
     int nDevices;
@@ -87,6 +99,8 @@ void runKernel(int kernelNum, float *&A, float *&B, float *&C)
     case 3:
         runSharedMem(A, B, C);
         break;
+    case 4:
+        run1DBlocktiling(A, B, C);
     default:
         break;
     }

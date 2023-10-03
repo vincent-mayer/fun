@@ -181,6 +181,12 @@ C[threadRow * N + threadCol] = tmp;
 - latency: 15.5 ms
 - throughput: 1100 GFLOP/S
 
+## 4. 1D Blocktiling
+
+- In 3. Shared Memory each thread only computes one result
+
+![Blockwise computation](images/blocktiling_1d.png "Blocktiling 1D.")
+
 # Open Questions
 
-- Why is 1.1 slower than 2 even though both achieves coalesced memory accesses?
+- Why is 1.1 slower than 2 even though both achieve coalesced memory accesses?
