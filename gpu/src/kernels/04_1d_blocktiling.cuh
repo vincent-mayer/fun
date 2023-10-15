@@ -48,9 +48,13 @@ __global__ void blocktiling1DGemmKernel(int M, int N, int K, const float *A,
         B += BK * N;
 
         // Perform dot product over row vector of block in A and col vector of block in B
-        for (int dotIdx = 0; dotIdx < BLOCKSIZE; ++dotIdx)
-            tmp +=
-                As[threadRow * BLOCKSIZE + dotIdx] * Bs[dotIdx * BLOCKSIZE + threadCol];
+        for (int dotIdx = 0; dotIdx < BK; ++dotIdx)
+        {
+            for (int resIdx = 0; resIdx < TM; ++resIdx)
+            {
+            }
+        }
+        tmp += As[threadRow * BLOCKSIZE + dotIdx] * Bs[dotIdx * BLOCKSIZE + threadCol];
 
         // Need to synch again at the end to avoid faster threads fetching the next block
         // into cache before slower threads are done.

@@ -185,7 +185,7 @@ C[threadRow * N + threadCol] = tmp;
 
 - In 3. Shared Memory each thread only computes one result
 
-![Blockwise computation](images/blocktiling_1d.png "Blocktiling 1D.")
+![Blocktiling 1d](images/blocktiling_1d.png "Blocktiling 1D.")
 
 # Open Questions
 
