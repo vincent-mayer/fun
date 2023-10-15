@@ -4,7 +4,7 @@
 
 #define N 2048
 
-void runNaive(float *&A, float *&B, float *&C)
+void runNaive(float *A, float *B, float *C)
 {
     dim3 gridDim(ceil(N / 32), ceil(N / 32), 1);
     dim3 blockDim(32, 32);
@@ -12,7 +12,7 @@ void runNaive(float *&A, float *&B, float *&C)
     return;
 }
 
-void runNaivelyCoalesced(float *&A, float *&B, float *&C)
+void runNaivelyCoalesced(float *A, float *B, float *C)
 {
     dim3 gridDim(ceil(N / 32), ceil(N / 32), 1);
     dim3 blockDim(32, 32);
@@ -20,7 +20,7 @@ void runNaivelyCoalesced(float *&A, float *&B, float *&C)
     return;
 }
 
-void runCoalesced(float *&A, float *&B, float *&C)
+void runCoalesced(float *A, float *B, float *C)
 {
     dim3 gridDim(ceil(N / 32), ceil(N / 32), 1);
     dim3 blockDim(32 * 32);
@@ -28,7 +28,7 @@ void runCoalesced(float *&A, float *&B, float *&C)
     return;
 }
 
-void runSharedMem(float *&A, float *&B, float *&C)
+void runSharedMem(float *A, float *B, float *C)
 {
     dim3 gridDim(ceil(N / 32), ceil(N / 32), 1);
     dim3 blockDim(32 * 32);
@@ -36,7 +36,15 @@ void runSharedMem(float *&A, float *&B, float *&C)
     return;
 }
 
-void run1DBlocktiling(float *&A, float *&B, float *&C)
+void runSharedMem2d(float *A, float *B, float *C)
+{
+    const int TILESIZE = 32;
+    dim3 gridDim(ceil(N / TILESIZE), ceil(N / TILESIZE));
+    dim3 blockDim(TILESIZE, TILESIZE);
+    sharedMem2dGemmKernel<32><<<gridDim, blockDim>>>(N, A, B, C);
+}
+
+void run1DBlocktiling(float *A, float *B, float *C)
 {
     const uint BM = 64;
     const uint BN = 64;
@@ -81,9 +89,9 @@ void printDeviceProperties()
     }
 }
 
-void runKernel(int kernelNum, float *&A, float *&B, float *&C)
+void runKernel(int kernelNum, float *A, float *B, float *C)
 {
-    printDeviceProperties();
+    // printDeviceProperties();
 
     switch (kernelNum)
     {
@@ -101,6 +109,10 @@ void runKernel(int kernelNum, float *&A, float *&B, float *&C)
         break;
     case 4:
         run1DBlocktiling(A, B, C);
+        break;
+    case 5:
+        runSharedMem2d(A, B, C);
+        break;
     default:
         break;
     }
