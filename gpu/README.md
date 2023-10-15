@@ -187,6 +187,46 @@ C[threadRow * N + threadCol] = tmp;
 
 ![Blocktiling 1d](images/blocktiling_1d.png "Blocktiling 1D.")
 
+```c++
+template <const int BM, const int BN, const int BK, const int TM>
+__global__ void blockTilingKernel(const int N, float *A, float *B, float *C){
+  int cRow = blockIdx.y;
+  int cCol = blockIdx.x;
+
+  int threadRow = threadIdx.x / BN;
+  int threadCol = threadIdx.x % BN;
+
+  __shared__ float As[BM*BK];
+  __shared__ float Bs[BN*BK];
+
+  int innerRowA = threadIdx.x / BK;
+  int innerColA = threadIdx.x % BK;
+  int innerRowB = threadIdx.x / BN;
+  int innerColB = threadIdx.x % BN;
+
+  A += cRow * K * BM;
+  B += cCol * BN;
+  C += cRow * N * BM + cCol * BN;
+
+  for (int bIdx = 0; bIdx < K; ++bIdx){
+    for (int dotIdx = 0; dotIdx < BK; ++dotIdx){
+      for (int )
+    }
+  }
+}
+
+// Invoked like:
+const uint BM = 64; 
+const uint BN = 64;
+const uint BK = 8;
+const uint TM = 8;
+
+dim3 gridDim(ceil(N / BN), ceil(N / BM)) // Need N/BN blocks in x and N/BM blocks in y to compute full result
+dim3 blockDim(BM * BN / TM) // BM*BN-sized chunks of the output
+blocktilingKernel<BM, BN, BK, TM>
+      <<<gridDim, blockDim>>>(N, A, B, C)
+```
+
 # Open Questions
 
 - Why is 1.1 slower than 2 even though both achieve coalesced memory accesses?
