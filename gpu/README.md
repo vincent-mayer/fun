@@ -227,6 +227,12 @@ blocktilingKernel<BM, BN, BK, TM>
       <<<gridDim, blockDim>>>(N, A, B, C)
 ```
 
+
+## Misc
+
+![Cuda memory variable declaration](images/cuda_memory_variable_declaration.png "Cuda variable declaration.")
+
+
 # Open Questions
 
 - Why is 1.1 slower than 2 even though both achieve coalesced memory accesses?
