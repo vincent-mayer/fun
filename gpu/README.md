@@ -23,16 +23,28 @@ nvcc -ptx gemm.cpp src/runner.cu -I. -I./src -I/${HOME}/libs/libnpy-0.1.0/includ
 ## General GPU
 
 - Consists of cores, which contain an ALU + FPU
+- Organized as multiple SMs (streaming multiprocessors)
+  - Each SM can hold one or more thread blocks
+  - Ideally more thread blocks to hide memory latencies (occupancy high)
+- GPUs usually have 48kB of shared memory available per SM
+  - If a block uses all 48kB then only 1 block per SM
+- Shared memory is organized as 2D matrix of 32*4B columns and the 128kB/(32*4B) rows
+- Occupancy is ratio of number of active warps per SM and maximum number of active warps per SM
+- Occupancy (how many blocks per SM) is limited by
+  - register count (max regs per SM, e.g. 65565)
+  - warp count (max threads per SM, e.g. 1526)
+  - SMEM (max SMEM / SMEM per block)
 - ALU emulates FP-ops with INT-ops (takes several cycles)
 - FPU achieves almost one FP-op per cycle
 - thread is a software concept, cores are hardware
 - three-level compute hierarchy: Grid -> Block -> Thread
 - warp = 32 threads of a block with consecutive `threadID`
 - warps execute together on an SM (streaming multiprocessor)
-- threads within a warp execute the same intructions
+- threads within a warp execute the same intructions in lockstep
 - when a warp initiates a memory request, the SM switches to another warp to hide latency
 - four warp-schedulers per multiprocessor
 - GPUs support 32B, 64B, and 128B memory accesses
+  - If a warp (32 threads) accesses 1 element (4B) per thread in the same cache line then 32*4B = 128B can be transferred in one transaction
 - blocks are mapped onto SMs in a one-to-one manner
 - warps are mapped onto cores in a one-to-one manner
   - each warp is assigned to a single phyical core
@@ -228,6 +240,10 @@ The loads are from shared memory, but still we perform a lot of loading here (2 
 ## 5. 1D Blocktiling
 
 In order to reduce accesses to shared mem we need to execute multiple FMAs per thread. Programatically this can be achieved by adding another inner loop that computes multiple results per thread.
+
+## Misc
+
+![Cuda memory variable declaration](images/cuda_memory_variable_declaration.png "Cuda variable declaration.")
 
 # Open Questions
 
