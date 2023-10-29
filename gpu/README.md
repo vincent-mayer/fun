@@ -8,6 +8,18 @@ Compile and run assuming you have libnpy under `$HOME/libs`:
 nvcc gemm.cpp src/runner.cu -o gemm -I. -I./src -I/${HOME}/libs/libnpy-0.1.0/include --std=c++17 && ./gemm
 ```
 
+To understand register and shared mem usage per thread for each kernel:
+
+```bash
+nvcc --ptxas-options=-v gemm.cpp src/runner.cu -I. -I./src -I/${HOME}/libs/libnpy-0.1.0/include --std=c++17
+```
+
+To examine the intermediate assembly representation (PTX):
+
+```bash
+nvcc -ptx gemm.cpp src/runner.cu -I. -I./src -I/${HOME}/libs/libnpy-0.1.0/include --std=c++17  
+```
+
 ## General GPU
 
 - Consists of cores, which contain an ALU + FPU
@@ -181,51 +193,41 @@ C[threadRow * N + threadCol] = tmp;
 - latency: 15.5 ms
 - throughput: 1100 GFLOP/S
 
-## 4. 1D Blocktiling
+## 4. Shared memory 2D
 
-- In 3. Shared Memory each thread only computes one result
+Instead of the 1D thread indexing from the previous kernel, we can also use 2D thread blocks. This reduces much of the clutter of the previous implementation
 
-![Blocktiling 1d](images/blocktiling_1d.png "Blocktiling 1D.")
+### Analyzing this kernel
 
-```c++
-template <const int BM, const int BN, const int BK, const int TM>
-__global__ void blockTilingKernel(const int N, float *A, float *B, float *C){
-  int cRow = blockIdx.y;
-  int cCol = blockIdx.x;
+occupancy considerations (number of active warps / max number of active warps):
 
-  int threadRow = threadIdx.x / BN;
-  int threadCol = threadIdx.x % BN;
+- 2*\32\*32\*4B=8kB of shared memory per block (BLOCKSIZE=32, float32 data and one block for A, one for B)
+  - SMEM per SM is 100kB --> floor(100 / 8) = 12 blocks per SM
+- 27 registers per thread, 1024 threads per block --> 27648 registers per block
+  - regs per SM is 65565 --> floor(65565 / 27468) = 2
+- 352B of cmem[0]:kernel arguments (cmem[2]:user defined constant objects, cmem[16]:compiler generated constants)
+- Because of the number of registers is maxium number of blocks per SM = 2
+  - Since there are 40 SMs, we can have 80 blocks concurrently (really?!)
+- On the other hand: Max threads per SM = 1536, and one block has 1024 threads, i.e. blocks per SM = 1 ??
+  - I.e. only 40 blocks, because 40 SMs
+- Upper limit = 1 block per SM, i.e. 32 warps per SM
+- Max number of active warps per SM either 48 or 64, so occupancy either 50 or 66% (that's not too bad)
 
-  __shared__ float As[BM*BK];
-  __shared__ float Bs[BN*BK];
+i.e. occupancy is not necessarily the problem here. So what is?
 
-  int innerRowA = threadIdx.x / BK;
-  int innerColA = threadIdx.x % BK;
-  int innerRowB = threadIdx.x / BN;
-  int innerColB = threadIdx.x % BN;
+Looking at the .ptx file we see a lot of:
 
-  A += cRow * K * BM;
-  B += cCol * BN;
-  C += cRow * N * BM + cCol * BN;
-
-  for (int bIdx = 0; bIdx < K; ++bIdx){
-    for (int dotIdx = 0; dotIdx < BK; ++dotIdx){
-      for (int )
-    }
-  }
-}
-
-// Invoked like:
-const uint BM = 64; 
-const uint BN = 64;
-const uint BK = 8;
-const uint TM = 8;
-
-dim3 gridDim(ceil(N / BN), ceil(N / BM)) // Need N/BN blocks in x and N/BM blocks in y to compute full result
-dim3 blockDim(BM * BN / TM) // BM*BN-sized chunks of the output
-blocktilingKernel<BM, BN, BK, TM>
-      <<<gridDim, blockDim>>>(N, A, B, C)
+```bash
+ ld.shared.f32  %f8, [%r9];
+ ld.shared.f32  %f9, [%r8];
+ fma.rn.f32  %f10, %f9, %f8, %f104;
 ```
+
+The loads are from shared memory, but still we perform a lot of loading here (2 loads and 1 FMA). Memory accesses still have a significantly higher latency than arithmetic instructions, so we would like reduce memory access and increase our FLOPS/byte.
+
+## 5. 1D Blocktiling
+
+In order to reduce accesses to shared mem we need to execute multiple FMAs per thread. Programatically this can be achieved by adding another inner loop that computes multiple results per thread.
 
 # Open Questions
 

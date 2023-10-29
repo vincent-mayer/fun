@@ -46,13 +46,13 @@ void runSharedMem2d(float *A, float *B, float *C)
 
 void run1DBlocktiling(float *A, float *B, float *C)
 {
-    const uint BM = 64;
-    const uint BN = 64;
-    const uint BK = 8;
-    const uint TM = 8;
-    dim3 gridDim(ceil(N / BN), ceil(N / BM));
-    dim3 blockDim((BM * BN) / TM);
-    blocktiling1DGemmKernel<BM, BN, BK, TM><<<gridDim, blockDim>>>(N, N, N, A, B, C);
+    const uint TILESIZE_X = 64;
+    const uint TILESIZE_Y = 64;
+    const uint RESULTS_PER_THREAD = 8;
+    dim3 gridDim(ceil(N / TILESIZE_X), ceil(N / TILESIZE_Y));
+    dim3 blockDim(1);
+    blocktiling1DGemmKernel<TILESIZE_X, TILESIZE_Y, RESULTS_PER_THREAD>
+        <<<gridDim, blockDim>>>(N, A, B, C);
     return;
 }
 
@@ -86,13 +86,18 @@ void printDeviceProperties()
         printf("  SMEM per SM: %.1f\n", prop.sharedMemPerMultiprocessor / 1024.0);
         printf("  SMEM per block: %.1f\n", prop.sharedMemPerBlock / 1024.0);
         printf("  SM count: %d\n", prop.multiProcessorCount);
+        printf("  Registers per block: %d\n", prop.regsPerBlock);
+        printf("  Registers per SM: %d\n", prop.regsPerMultiprocessor);
+        printf("  Max blocks per SM: %d\n", prop.maxBlocksPerMultiProcessor);
+        const auto &tdim = prop.maxThreadsDim;
+        printf("  Max threads dim: [%d, %d, %d]\n", tdim[0], tdim[1], tdim[2]);
+        const auto &gsize = prop.maxGridSize;
+        printf("  Max grid size: [%d, %d, %d]\n", gsize[0], gsize[1], gsize[2]);
     }
 }
 
 void runKernel(int kernelNum, float *A, float *B, float *C)
 {
-    // printDeviceProperties();
-
     switch (kernelNum)
     {
     case 0:
@@ -108,10 +113,10 @@ void runKernel(int kernelNum, float *A, float *B, float *C)
         runSharedMem(A, B, C);
         break;
     case 4:
-        run1DBlocktiling(A, B, C);
+        runSharedMem2d(A, B, C);
         break;
     case 5:
-        runSharedMem2d(A, B, C);
+        run1DBlocktiling(A, B, C);
         break;
     default:
         break;

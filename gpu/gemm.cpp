@@ -57,6 +57,8 @@ int main(int argc, char *argv[])
     cudaMemcpy(dB, B.data(), ArrayBytes, cudaMemcpyHostToDevice);
     cudaMemcpy(dC, C.data(), ArrayBytes, cudaMemcpyHostToDevice);
 
+    printDeviceProperties();
+
     for (int i = 0; i < 30; i++)
     {
         auto startTime = now();
