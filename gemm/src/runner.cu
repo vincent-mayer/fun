@@ -46,12 +46,11 @@ void runSharedMem2d(float *A, float *B, float *C)
 
 void run1DBlocktiling(float *A, float *B, float *C)
 {
-    const uint TILESIZE_X = 64;
-    const uint TILESIZE_Y = 64;
+    const uint TILESIZE = 64;
     const uint RESULTS_PER_THREAD = 8;
-    dim3 gridDim(ceil(N / TILESIZE_X), ceil(N / TILESIZE_Y));
-    dim3 blockDim(1);
-    blocktiling1DGemmKernel<TILESIZE_X, TILESIZE_Y, RESULTS_PER_THREAD>
+    dim3 gridDim(ceil(N / TILESIZE), ceil(N / TILESIZE));
+    dim3 blockDim(TILESIZE, TILESIZE / RESULTS_PER_THREAD);
+    blocktiling1DGemmKernel<TILESIZE, RESULTS_PER_THREAD>
         <<<gridDim, blockDim>>>(N, A, B, C);
     return;
 }

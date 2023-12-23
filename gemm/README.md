@@ -20,6 +20,12 @@ To examine the intermediate assembly representation (PTX):
 nvcc -ptx gemm.cpp src/runner.cu -I. -I./src -I/${HOME}/libs/libnpy-0.1.0/include --std=c++17  
 ```
 
+Profiling with Nvidia nsight compute
+
+```bash
+sudo $(which ncu) -f --set full -o profile gemm                                                                             
+```
+
 ## General GPU
 
 - Consists of cores, which contain an ALU + FPU
