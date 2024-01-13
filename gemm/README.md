@@ -254,3 +254,8 @@ In order to reduce accesses to shared mem we need to execute multiple FMAs per t
 # Open Questions
 
 - Why is 1.1 slower than 2 even though both achieve coalesced memory accesses?
+
+
+From https://dlsyscourse.org/slides/12-gpu-acceleration.pdf:
+
+![Blocktiling  from the web](images/blocktiling_2d.png)
